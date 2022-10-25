@@ -13,14 +13,20 @@ import math
 '     ██║   ╚██████╔╝██████╔╝╚██████╔╝
 '     ╚═╝    ╚═════╝ ╚═════╝  ╚═════╝ 
 '                                     
-- Find an API that can get phone dimensions and screen dimensions
+- Find an API that can get phone dimensions and screen dimensions []
+- Create a menu with options to perform tasks [] (
+    Set 0's, 
+    Set Phone Model[display cordinates,test cordinates], 
+    Start Test[rgb, touch, sensors, etc.],
+    change/set frequently used variables
+    )
 - Calculate the screen coordinates based on the phone dimensions and return GCode [✅]
-- Top 5 phones in facility and create profiles for each
-- Swap from Spindle control to finger control (When to touch, drap, and lift)
-- Function that accepts length in mm and returns Gcode to move that length
-- How many mm are between X10 and X20? 
-- How many mm are between Y10 and Y20?
-- Read in a GCode file (*.nc) and send it over serial
+- Top 5 phones in facility and create profiles for each []
+- Swap from Spindle control to finger control (When to touch, drap, and lift) []
+- Function that accepts length in mm and returns Gcode to move that length []
+- How many mm are between X10 and X20? []
+- How many mm are between Y10 and Y20? []
+- Read in a GCode file (*.nc) and send it over serial []
 
 
 Helpful Websites:
