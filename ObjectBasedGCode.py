@@ -16,7 +16,8 @@ import math
 - Find an API that can get phone dimensions and screen dimensions []
 - Create a menu with options to perform tasks [] (
     Set 0's, 
-    Set Phone Model[display cordinates,test cordinates], 
+    Set Phone Model[display cordinates,test cordinates],
+    Show Phone Model specs.,
     Start Test[rgb, touch, sensors, etc.],
     change/set frequently used variables
     )
