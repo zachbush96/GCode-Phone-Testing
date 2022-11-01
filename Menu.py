@@ -9,6 +9,7 @@ Testing_Device = GalaxyNote20Ultra
 
 
 while True:
+    cls()
     print("MAIN MENU")
     print("1. Zero Out Axis")
     print("2. Start Tests")
@@ -22,6 +23,10 @@ while True:
 
     if choice == "1": #Zero Out Axis
         print("Zeroing Out Axis")
+        if ser.is_open is False:
+            print("Reconnecting to Device")
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
         set00(ser, cnc)
     
     elif choice == "2": #Start Tests
@@ -47,9 +52,9 @@ while True:
             Green(ser, Testing_Device)
             Blue(ser, Testing_Device)
             screenTest(ser, Testing_Device)
-            PowerButton(ser, Testing_Device)
-            VolumeDown(ser, Testing_Device)
-            VolumeUp(ser, Testing_Device)
+            #PowerButton(ser, Testing_Device)
+            #VolumeDown(ser, Testing_Device)
+            #VolumeUp(ser, Testing_Device)
             Receiver(ser, Testing_Device)
             Vibration(ser, Testing_Device)
             MegaCam(ser, Testing_Device)
@@ -97,7 +102,8 @@ while True:
         choice = input("Enter choice: ")
         if choice == "1":
             print("Changing SPEED")
-            FSPEED = input("Enter new FSPEED: ")
+            print("Machine Calibrated at 3_000. time.sleep's will have to be updated for the new time it takes to complete moves")
+            ObjectBasedGCode.FSPEED = input(f'Enter new FSPEED (currently: {ObjectBasedGCode.FSPEED}): ')
             #Code to change SPEED
         elif choice == "2":
             print("Chainging SCREEN_CORDINATES_PADDING")
@@ -112,6 +118,10 @@ while True:
     
     elif choice == "4": #Custom Code
         userInput = input("Enter Code: ")
+        if ser.is_open is False:
+            print("Reconnecting to Device")
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
         if "quit" in userInput:
             print("Exiting")
             break
@@ -124,13 +134,13 @@ while True:
             ser.close()
         except:
             print("No COMPORT to close")
-        print("Current Connection: " + COMPORT)
+        print("Current Connection: " + cnc.COMport)
         ports = serial.tools.list_ports.comports()
         for port, desc, hwid in sorted(ports):
             print("{}: {} [{}]".format(port, desc, hwid))
 
-        COMPORT = input("Select COM PORT(example: COM26): ")
-        ser = serial.Serial(COMPORT, 115200, timeout=1)
+        cnc.COMport = input("Select COM PORT(example: COM26): ")
+        ser = serial.Serial(cnc.COMport, 115200, timeout=1)
         setupConnection(ser)
     
     elif choice == "6": #Camera Testing
@@ -143,7 +153,7 @@ while True:
         choice = input("Enter choice: ")
         if ser.is_open is False:
             print("Reconnecting to Device")
-            ser = serial.Serial(COMPORT, 115200, timeout=1)
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
             setupConnection(ser)
         if choice == "1": #Center Camera
             print("Centering Camera")
@@ -154,7 +164,7 @@ while True:
         if choice == "3": #Show Camera View of camera selected in the CNC Profile
             print("Showing Camera View")
             showCameraView(cnc)
-        if choice == "4":
+        if choice == "4": #Show all Camera Views
             print("Showing all Camera Views")
             showAllConnectedCameras()
     
