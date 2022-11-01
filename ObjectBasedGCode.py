@@ -14,7 +14,6 @@ from Camera import *
 
 
 '''
-
 '  ████████╗ ██████╗ ██████╗  ██████╗ 
 '  ╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
 '     ██║   ██║   ██║██║  ██║██║   ██║
@@ -31,18 +30,26 @@ from Camera import *
 - How many mm are between Y10 and Y20? []
 - Read in a GCode file (*.nc) and send it over serial [✅] 
 - Instead of calculting the test positions and screen positions, use predetermined static values (known good) [✅]
-- Make the Test functions in the Menu.py dynamic to show all the possible tests the phone can do []
+- Make the Test functions in the Menu.py dynamic to show all the possible tests the phone can do [⛔] ---HOLD--
 - Make the test to test camera function [✅]
 - After the color tests, the finger should move to a point on the screen (currently touching the board) [✅]
 - Touch test points (corners) need to be more accurate [✅]
 - Touch test should leave one square blank, take a picture, then complete the test []
 - Pass an argument to the Meny.py to select a COM port, if none is passed - prompt the user to select[✅]
 - Take pictures of the phone screen after each color test automatically [✅]
-- How to link a COMPORT and camera to eachother []
+- How to link a COMPORT and camera to eachother [ ✅
+    - Created a class called CNCMachine that holds the COMport, Camera ID, Name, and file path to save images
+    - Called the class via the SetupCNC function that can be passed multiple options and will prompt for the others
+]
 - Sub Key test needs to take a picture after hitting each key to make sure the key is pressed []
-- Address cameras based on a selection instead of a hard coded value []
+- Address cameras based on a selection instead of a hard coded value [✅
+    - Camers are addressed via the CNCMachine class (example cnc.camera)  
+]
 - Error handling for camera failure (*USUALLY CAUSED BY CAMERA BEING OPEN IN ANOTHER PROGRAM*) []
-- RUNNING OPTIONS python ObjectBasedGCode.py {COMPORT} {CAMERA NUMBER}
+- The images folder contain the machine name folder - but it should also create a folder for the device. (Folder name an IMEI?) []
+
+
+- RUNNING OPTIONS python ObjectBasedGCode.py {COMPORT} {CAMERA NUMBER} {}
 
 
 
@@ -53,6 +60,15 @@ https://www.sainsmart.com/blogs/news/grbl-v1-1-quick-reference #GCODE ERROR CODE
 https://smoothieware.org/on_boot.gcode
 https://smoothieware.org/supported-g-codes
 '''
+
+#FREQUENTLY USED VARIABLES
+TROUBLESHOOTING = True
+BACKOFF = 5 #Hit the limit switch and and then move back a few mm with the force of BACKOFF_FORCE
+BACKOFF_FORCE = 1000
+SCREEN_CORDINATES_PADDING = BACKOFF + 4
+FSPEED = 10_000
+COMPORT = ""
+
 
 
 #Helper Functions
@@ -226,10 +242,10 @@ def screenTest(ser, DeviceProfile):
     setupConnection(ser)
   command(ser, DeviceProfile["testLocations"]["Touch"]) #GOTO touch button
   #Touch the screen and raise back up
-  command(ser, "G1 Z-35 F1000")
-  command(ser, "G1 Z-2")
+  command(ser, f'G1 Z-35  F{FSPEED}')
+  command(ser, "G1 Z-30")
   command(ser, DeviceProfile["Display"]["Top Left Corner"])
-  command(ser, "G1 Z-35 F1000")
+  command(ser, f'G1 Z-35  F{FSPEED}')
   command(ser, DeviceProfile["Display"]["Top Right Corner"])
   command(ser, DeviceProfile["Display"]["Bottom Right Corner"])
   command(ser, DeviceProfile["Display"]["Bottom Left Corner"])
@@ -251,32 +267,32 @@ def Red(ser, DeviceProfile):
   print("Just sent Camera Center")
   time.sleep(20)
   capturePicture("GoodRed" + str(random.randint(0, 100000)), cnc)
-  command(ser, f'G1 Y-58 F{FSPEED}') #Move to a touchable location
+  command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   #command(ser, "G1 Z-24")
   command(ser, "G1 Z-35")
   command(ser, "G1 Z-20") 
 
 def Green(ser, DeviceProfile):
   command(ser, DeviceProfile['testLocations']['Green'])
-  command(ser, "G1 Z-35 F1000")
-  command(ser, "G1 Z-2")
+  command(ser, f'G1 Z-35  F{FSPEED}')
+  command(ser, "G1 Z-30")
   command(ser, DeviceProfile['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(15)
   capturePicture("GoodGreeen" + str(random.randint(0, 100000)), cnc)
-  command(ser, f'G1 Y-58 F{FSPEED}') #Move to a touchable location
+  command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   command(ser, "G1 Z-35")
   command(ser, "G1 Z-21")
 
 def Blue(ser, DeviceProfile):
   command(ser, DeviceProfile['testLocations']['Blue'])
-  command(ser, "G1 Z-35 F1000")
-  command(ser, "G1 Z-2")
+  command(ser, f'G1 Z-35  F{FSPEED}')
+  command(ser, "G1 Z-30")
   command(ser, DeviceProfile['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(15)
   capturePicture("GoodBlue" + str(random.randint(0, 100000)), cnc)
-  command(ser, f'G1 Y-58 F{FSPEED}') #Move to a touchable location
+  command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   command(ser, "G1 Z-35") #touch the screen
   command(ser, "G1 Z-21") #raise back up
 
@@ -432,13 +448,7 @@ def SubKey(ser, DeviceProfile):
   capturePicture("SubKey_BackButton" + str(random.randint(0, 100000)), cnc)
 
 
-#FREQUENTLY USED VARIABLES
-TROUBLESHOOTING = True
-BACKOFF = 5 #Hit the limit switch and and then move back a few mm with the force of BACKOFF_FORCE
-BACKOFF_FORCE = 1000
-SCREEN_CORDINATES_PADDING = BACKOFF + 4
-FSPEED = 10000
-COMPORT = ""
+
 
 
 #Device Profile
@@ -451,10 +461,10 @@ GalaxyNote20Ultra = {
         "Aspect Ratio": round(19.3/9, 2),
         "Width": 0, #158.6
         "Height": 0, #73.95
-        "Top Left Corner": "G1 X224.4 Y-53 F3000",
-        "Top Right Corner": "G1 X224.4 Y-121 F3000",
-        "Bottom Right Corner": "G1 X78.5 Y-121 F3000",
-        "Bottom Left Corner": "G1 X78.5 Y-53 F3000",
+        "Top Left Corner": f'G1 X224.4 Y-53  F{FSPEED}',
+        "Top Right Corner": f'G1 X224.4 Y-121  F{FSPEED}',
+        "Bottom Right Corner": f'G1 X78.5 Y-121  F{FSPEED}',
+        "Bottom Left Corner": f'G1 X78.5 Y-53  F{FSPEED}',
         "Back Button":f'G1 X80.5 Y-105 F{FSPEED}',
         "Home Button":f'G1 X80.5 Y-88 F{FSPEED}',
         "Menu Button":f'"G1 X80.5 Y-65 F{FSPEED}',
@@ -501,19 +511,13 @@ class CNCMachine:
         self.imagePath = imagePath
 
     def viewSelf(self):
-        #print("Name: " + self.name)
-        #print("COM Port: " + self.COMport)
-        #print("Camera: " + str(self.camera))
-        #print("Image Path: " + self.imagePath)
-        InfoString = "Name: " + self.name + "\nCOM Port: " + self.COMport + "\nCamera: " + str(self.camera) + "\nImage Path: " + self.imagePath
+        InfoString = "Name: " + self.name + "\nCOM Port: " + self.COMport + "\nCamera: " + str(self.camera) + "\nImage Path: " + self.imagePath + "\n"
         return InfoString
 
 
-#Name, ComPort, Camera, ImagePath
-#CNC_MACHINE = CNCMachine("Berta", "COM26", 0, "/TestingImages/")
 
-
-#A function that can be passed arguments for specific options, or they can be prompted for
+#A function to setup a CNCMahcine object
+#It can get passed a variable set of arguments and will prompt for the missing ones
 def setupCNC(**options):
     n = ""
     cport = ""
@@ -538,7 +542,7 @@ def setupCNC(**options):
     if "PATH" in options:
         ipath = options["PATH"]
     else:
-        ipath = "/images/" + input("Enter Relative Image Path:(example: TestingImages/) ")
+        ipath = "/images/" + input("Folder name to save images:(example: TestingImages or CNC1) ")
     
     #If a name is specified, use that, otherwise name it up with a random number
     if "Name" in options:
@@ -547,7 +551,8 @@ def setupCNC(**options):
         n = "CNC_"+str(random.randint(0, 100000))
     C = CNCMachine(n, cport, cam, ipath)
     print("CNC Object Created")
-    print(C)
+    if TROUBLESHOOTING:
+        print(C.viewSelf())
     return C
     
 
@@ -557,29 +562,80 @@ cls() #Clear the Screen
 
 
 if len(sys.argv) < 2:
-    #Run setup if no arguments are passed
-    cnc = setupCNC()
+    cnc = setupCNC() #Run setup if no arguments are passed
+    ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+    setupConnection(ser)
+    command(ser, "G90")
 else:
-    #Run setup if arguments are passed
-    #If one option is passed
     if len(sys.argv) == 2:
         if sys.argv[1] == "help":
-            print("Options: COMPORT, CameraID, PATH, Name")
+            print("Options: COMPORT, CameraID, PATH, Name \{auto\}")
         else:
             cnc = setupCNC(COMPORT=sys.argv[1])
-    #If two options are passed
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
+            command(ser, "G90") #Set the position to absolute mode
     elif len(sys.argv) == 3:
         cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2])
-    #If three options are passed
+        ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+        setupConnection(ser)
+        command(ser, "G90") #Set the position to absolute mode
     elif len(sys.argv) == 4:
         cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3])
-    #If four options are passed
+        ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+        setupConnection(ser)
+        command(ser, "G90") #Set the position to absolute mode
     elif len(sys.argv) == 5:
-      cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3], Name=sys.argv[4])
-
-
-
-ser = serial.Serial(cnc.COMport, 115200, timeout=1)
-setupConnection(ser)
-command(ser, "G90") #Set the position to absolute mode
+        cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3], Name=sys.argv[4])
+        ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+        setupConnection(ser)
+        command(ser, "G90") #Set the position to absolute mode
+    elif len(sys.argv) == 6:
+        if "auto" in sys.argv:
+            cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3], Name=sys.argv[4])
+            #Start running all the tests
+            print("Starting All Tests")
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
+            command(ser, "G90") #Set the position to absolute mode
+            Red(ser, GalaxyNote20Ultra)
+            Green(ser, GalaxyNote20Ultra)
+            Blue(ser, GalaxyNote20Ultra)
+            screenTest(ser, GalaxyNote20Ultra)
+            #PowerButton(ser, GalaxyNote20Ultra)
+            #VolumeDown(ser, GalaxyNote20Ultra)
+            #VolumeUp(ser, GalaxyNote20Ultra)
+            Receiver(ser, GalaxyNote20Ultra)
+            Vibration(ser, GalaxyNote20Ultra)
+            MegaCam(ser, GalaxyNote20Ultra)
+            Sensor(ser, GalaxyNote20Ultra)
+            command(ser, "G1 X0 Y0 Z0")
+            print("All Tests Complete")
+        elif "zero" in sys.argv:
+            cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3], Name=sys.argv[4])
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
+            command(ser, "G90")
+            set00(ser)
+        elif "autozero" in sys.argv:
+            cnc = setupCNC(COMPORT=sys.argv[1], CameraID=sys.argv[2], PATH=sys.argv[3], Name=sys.argv[4])
+            ser = serial.Serial(cnc.COMport, 115200, timeout=1)
+            setupConnection(ser)
+            command(ser, "G90")
+            set00(ser, cnc)
+            Red(ser, GalaxyNote20Ultra)
+            Green(ser, GalaxyNote20Ultra)
+            Blue(ser, GalaxyNote20Ultra)
+            screenTest(ser, GalaxyNote20Ultra)
+            #PowerButton(ser, GalaxyNote20Ultra)
+            #VolumeDown(ser, GalaxyNote20Ultra)
+            #VolumeUp(ser, GalaxyNote20Ultra)
+            Receiver(ser, GalaxyNote20Ultra)
+            Vibration(ser, GalaxyNote20Ultra)
+            MegaCam(ser, GalaxyNote20Ultra)
+            Sensor(ser, GalaxyNote20Ultra)
+            command(ser, "G1 X0 Y0 Z0")
+            print("All Tests Complete")
+        else:
+            print("Invalid Arguments")
 
