@@ -50,6 +50,10 @@ from Camera import *
 
 
 - RUNNING OPTIONS python ObjectBasedGCode.py {COMPORT} {CAMERA NUMBER} {}
+- RUNNING EXAMPLES
+    - python Menu.py COM3 0 (*uses COMPORT 3 and the first camera*)
+    - python Menu.py COM28 1 BertaImages Berta zero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's*)
+    - python Menu.py COM28 1 BertaImages Berta autozero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's and runs all the tests*)
 
 
 
@@ -62,7 +66,7 @@ https://smoothieware.org/supported-g-codes
 '''
 
 #FREQUENTLY USED VARIABLES
-TROUBLESHOOTING = True
+TROUBLESHOOTING = False
 BACKOFF = 5 #Hit the limit switch and and then move back a few mm with the force of BACKOFF_FORCE
 BACKOFF_FORCE = 1000
 SCREEN_CORDINATES_PADDING = BACKOFF + 4
