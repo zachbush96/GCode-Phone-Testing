@@ -1,4 +1,3 @@
-#Pip3 install serial
 from ast import arg
 import sys
 import serial
@@ -9,61 +8,9 @@ import time
 import math
 import os
 import random
-#Local Import
 from Camera import *
 
 
-'''
-'  ████████╗ ██████╗ ██████╗  ██████╗ 
-'  ╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
-'     ██║   ██║   ██║██║  ██║██║   ██║
-'     ██║   ██║   ██║██║  ██║██║   ██║
-'     ██║   ╚██████╔╝██████╔╝╚██████╔╝
-'     ╚═╝    ╚═════╝ ╚═════╝  ╚═════╝ 
-'                                     
-- Find an API that can get phone dimensions and screen dimensions [⛔] ---HOLD---
-- Calculate the screen coordinates based on the phone dimensions and return GCode [✅]
-- Top 5 phones in facility and create profiles for each [⛔] ---HOLD---
-- Swap from Spindle control to finger control (When to touch, drap, and lift) []
-- Function that accepts length in mm and returns Gcode to move that length []
-- How many mm are between X10 and X20? []
-- How many mm are between Y10 and Y20? []
-- Read in a GCode file (*.nc) and send it over serial [✅] 
-- Instead of calculting the test positions and screen positions, use predetermined static values (known good) [✅]
-- Make the Test functions in the Menu.py dynamic to show all the possible tests the phone can do [⛔] ---HOLD--
-- Make the test to test camera function [✅]
-- After the color tests, the finger should move to a point on the screen (currently touching the board) [✅]
-- Touch test points (corners) need to be more accurate [✅]
-- Touch test should leave one square blank, take a picture, then complete the test []
-- Pass an argument to the Meny.py to select a COM port, if none is passed - prompt the user to select[✅]
-- Take pictures of the phone screen after each color test automatically [✅]
-- How to link a COMPORT and camera to eachother [ ✅
-    - Created a class called CNCMachine that holds the COMport, Camera ID, Name, and file path to save images
-    - Called the class via the SetupCNC function that can be passed multiple options and will prompt for the others
-]
-- Sub Key test needs to take a picture after hitting each key to make sure the key is pressed []
-- Address cameras based on a selection instead of a hard coded value [✅
-    - Camers are addressed via the CNCMachine class (example cnc.camera)  
-]
-- Error handling for camera failure (*USUALLY CAUSED BY CAMERA BEING OPEN IN ANOTHER PROGRAM*) []
-- The images folder contain the machine name folder - but it should also create a folder for the device. (Folder name an IMEI?) []
-
-
-- RUNNING OPTIONS python ObjectBasedGCode.py {COMPORT} {CAMERA NUMBER} {}
-- RUNNING EXAMPLES
-    - python Menu.py COM3 0 (*uses COMPORT 3 and the first camera*)
-    - python Menu.py COM28 1 BertaImages Berta zero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's*)
-    - python Menu.py COM28 1 BertaImages Berta autozero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's and runs all the tests*)
-
-
-
-
-Helpful Websites:
-https://marlinfw.org/docs/gcode/M083.html #ALL GCODE COMMANDS
-https://www.sainsmart.com/blogs/news/grbl-v1-1-quick-reference #GCODE ERROR CODES
-https://smoothieware.org/on_boot.gcode
-https://smoothieware.org/supported-g-codes
-'''
 
 #FREQUENTLY USED VARIABLES
 TROUBLESHOOTING = False
@@ -517,7 +464,12 @@ class CNCMachine:
     def viewSelf(self):
         InfoString = "Name: " + self.name + "\nCOM Port: " + self.COMport + "\nCamera: " + str(self.camera) + "\nImage Path: " + self.imagePath + "\n"
         return InfoString
-
+    def getComPort(self):
+        return self.COMport
+    def getCamera(self):
+        return self.camera
+    def getImagePath(self):
+        return self.imagePath
 
 
 #A function to setup a CNCMahcine object
@@ -559,8 +511,6 @@ def setupCNC(**options):
         print(C.viewSelf())
     return C
     
-
-
 
 cls() #Clear the Screen
 
