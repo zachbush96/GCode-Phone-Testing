@@ -3,8 +3,8 @@ from ObjectBasedGCode import *
 from Camera import *
 import serial
 
-cls()
-TROUBLESHOOTING = True
+#cls()
+TROUBLESHOOTING = False
 Testing_Device = GalaxyNote20Ultra
 
 
@@ -40,29 +40,19 @@ while True:
         print("8. Volume Down Button")
         print("9. Volume Up Button")
         choice = input("Enter choice: ")
-        print(f'Serial Connection Details {ser}')
         if ser.is_open is False:
             print("Reconnecting to Device")
             ser = serial.Serial(cnc.COMport, 115200, timeout=1)
             setupConnection(ser)
         if choice == "1":
             #SHOULD be a for loop that runs through all the tests
-            print("Starting All Tests")
-            Red(ser, Testing_Device)
-            Green(ser, Testing_Device)
-            Blue(ser, Testing_Device)
-            screenTest(ser, Testing_Device)
-            #PowerButton(ser, Testing_Device)
-            #VolumeDown(ser, Testing_Device)
-            #VolumeUp(ser, Testing_Device)
-            Receiver(ser, Testing_Device)
-            Vibration(ser, Testing_Device)
-            MegaCam(ser, Testing_Device)
-            Sensor(ser, Testing_Device)
-            command(ser, "G1 X0 Y0 Z0")
-    
+            for x in ViableTests:
+                x(ser, Testing_Device)
+            print("Returning to 000")
+            command(ser, "G1 X0 Y0 Z0 F1000") #Return to 0,0,0 to swap out the phone
+            
         elif choice == "2": #Red
-            print("Starting Red Test")
+            print("Starting Red Test - Menu")
             Red(ser, Testing_Device)                
         
         elif choice == "3": #Green
@@ -113,8 +103,8 @@ while True:
             print("Returning to MAIN MENU")
     
     elif choice == "5": #Setup Connection
-        print("Exiting")
-        break
+        print("Setup Connection")
+        print("Connection setup can be changed within the CNC Device Profile")
     
     elif choice == "4": #Custom Code
         userInput = input("Enter Code: ")
@@ -170,7 +160,7 @@ while True:
     
     elif choice == "8": #CNC Device Profile
         print("CNC Device Profile\n")
-        print(f'Profile: {cnc.viewSelf()}')
+        print(f'Profile: \n{cnc.viewSelf()}')
         print("1. Change CNC Device Profile")
         print("2. MAIN MENU")
         choice = input("Enter choice: ")
