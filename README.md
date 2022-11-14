@@ -1,28 +1,15 @@
-             _____ _   _  _____   _____  _                        _______        _   _             
-            / ____| \ | |/ ____| |  __ \| |                      |__   __|      | | (_)            
-           | |    |  \| | |      | |__) | |__   ___  _ __   ___     | | ___  ___| |_ _ _ __   __ _ 
-           | |    | . ` | |      |  ___/| '_ \ / _ \| '_ \ / _ \    | |/ _ \/ __| __| | '_ \ / _` |
-           | |____| |\  | |____  | |    | | | | (_) | | | |  __/    | |  __/\__ \ |_| | | | | (_| |
-            \_____|_| \_|\_____| |_|    |_| |_|\___/|_| |_|\___|    |_|\___||___/\__|_|_| |_|\__, |
-                                                                                              __/ |
-                                                                                             |___/ 
-
-
-
-                  ████████╗ ██████╗ ██████╗  ██████╗ 
-                  ╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
-                     ██║   ██║   ██║██║  ██║██║   ██║
-                     ██║   ██║   ██║██║  ██║██║   ██║
-                     ██║   ╚██████╔╝██████╔╝╚██████╔╝
-                     ╚═╝    ╚═════╝ ╚═════╝  ╚═════╝ 
-                                     
+'  ████████╗ ██████╗ ██████╗  ██████╗ 
+'  ╚══██╔══╝██╔═══██╗██╔══██╗██╔═══██╗
+'     ██║   ██║   ██║██║  ██║██║   ██║
+'     ██║   ██║   ██║██║  ██║██║   ██║
+'     ██║   ╚██████╔╝██████╔╝╚██████╔╝
+'     ╚═╝    ╚═════╝ ╚═════╝  ╚═════╝ 
+'                                     
 - Find an API that can get phone dimensions and screen dimensions [⛔] ---HOLD---
 - Calculate the screen coordinates based on the phone dimensions and return GCode [✅]
 - Top 5 phones in facility and create profiles for each [⛔] ---HOLD---
 - Swap from Spindle control to finger control (When to touch, drap, and lift) []
 - Function that accepts length in mm and returns Gcode to move that length []
-- How many mm are between X10 and X20? []
-- How many mm are between Y10 and Y20? []
 - Read in a GCode file (*.nc) and send it over serial [✅] 
 - Instead of calculting the test positions and screen positions, use predetermined static values (known good) [✅]
 - Make the Test functions in the Menu.py dynamic to show all the possible tests the phone can do [⛔] ---HOLD--
@@ -42,14 +29,22 @@
     ]
 - Error handling for camera failure (*USUALLY CAUSED BY CAMERA BEING OPEN IN ANOTHER PROGRAM*) []
 - The images folder contain the machine name folder - but it should also create a folder for the device. (Folder name an IMEI?) []
+- I think the CNCMachine object should also hold the Serial Connection object []
+- This will eventually need to send the test results to our API []
+- Try to have as much processing done off the main thread as possible []
+- Make the list of possible tests dynamic, so that if a new test is added, it will be added to a single list []
+    - Currently new tests need to be added to the Menu.py(line50) and ObjectBasedGCode.py(line615)
+- Can the movements be speed up and still be accurate?, optimize movement routes?, optimize test order? []
+- Set sleep to a single variable and use that variable for all sleeps []
+    - Some sleep times will need to be adjusted to account for long travel distances
+- Solution to make sure all the images are consistant (brightness, contrast, focus, etc) []
+    - Will this need to be done on the camera, or in the software?
+- Each test should have a pass/fail result []
+- Each test should end with being back at the 'home' screen []
 
-
-- RUNNING OPTIONS python ObjectBasedGCode.py {COMPORT} {CAMERA NUMBER} {}
-- RUNNING EXAMPLES
-    - python Menu.py COM3 0 (*uses COMPORT 3 and the first camera*)
-    - python Menu.py COM28 1 BertaImages Berta zero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's*)
-    - python Menu.py COM28 1 BertaImages Berta autozero (*Uses COMPORT 28, the second camera, and saves the images to the BertaImages folder, sets the name to Berta, and zero's out the axi's and runs all the tests*)
-
+----- Once I get the touch Device -----
+- Update screenTest fucntion (line 206) to raise itself early on the bottom left corner of the screen, take a picture, and then "complete" the test by touching that exact corner []
+- Update the 'click' function to use the piston/spindle controller and not move the Z-Axis as much []
 
 
 
@@ -64,7 +59,7 @@ https://smoothieware.org/on_boot.gcode
 https://smoothieware.org/supported-g-codes
 
 
-<!-- GETTING STARTED -->
+
 ## Getting Started
 **It's assumed you have Python 3 installed
 ### Prerequisites
@@ -73,6 +68,16 @@ Pyserial
 ```sh
 pip3 install serial
 ```
+Torch
+```sh
+pip3 install torch torchvision torchaudio
+```
+EasyOCR (https://github.com/JaidedAI/EasyOCR)
+```sh
+pip install easyocr
+```
+
+
 
 ## Usage
 The 'Main' package is Menu.py
@@ -82,31 +87,20 @@ You will be prompted to enter the COM Port, Camera ID & Directory to save images
 ```sh
 python Menu.py
 ```
-#### Specifying COM Port - 
-You will be prompted to enter a Camera ID & Directory to save images to.
+#### Automatic Setup -
+You can pass the COM Port, Camera ID, Name & Directory to save images to as arguments.
 ```sh
-python Menu.py COM5
+python Menu.py --Port COM3 --Camera 0 --Name CNC1 --Images myImages
 ```
-
-#### Specifying COM Port & Camera ID
-You will be prompted to enter a Directory to save images to.
+AutoRun - If you supply all the needed information, the program can auto run the tests.
 ```sh
-python Menu.py COM5 0
+python Menu.py --Port COM3 --Camera 0 --Name CNC1 --Images myImages -A
 ```
-
-#### Specifying COM Port, Camera ID, and Image Directory
-You will be brought to the main Menu
+Auto 0 - If you supply all the needed information, the program can 0 itself out
 ```sh
-python Menu.py COM6 1 imageDirectory
+python Menu.py --Port COM3 --Camera 0 --Name CNC1 --Images myImages -Z
 ```
-#### Single Line Run
-After specifying the COM Port, Camera ID, Image Directory, and a name
-This will zero out the axis's and run all the programmed tests.
-This assumes the axis's are NOT zero'd out
+Auto 0 & AutoRun - If you supply all the needed information, the program can 0 itself out and then run the tests.
 ```sh
-python Menu.py COM8 0 imageDir myName autozero
-```
-If the axis's ARE zero'd out this following line will start the tests automaticly
-```sh
-python Menu.py COM8 0 imageDir myName auto
+python Menu.py --Port COM3 --Camera 0 --Name CNC1 --Images myImages -Z -A
 ```
