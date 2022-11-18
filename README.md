@@ -27,12 +27,15 @@
 - Address cameras based on a selection instead of a hard coded value [✅
     - Camers are addressed via the CNCMachine class (example cnc.camera)  
     ]
-- Error handling for camera failure (*USUALLY CAUSED BY CAMERA BEING OPEN IN ANOTHER PROGRAM*) []
+- Error handling for camera failure (*USUALLY CAUSED BY CAMERA BEING OPEN IN ANOTHER PROGRAM*) [✅]
 - The images folder contain the machine name folder - but it should also create a folder for the device. (Folder name an IMEI?) []
 - I think the CNCMachine object should also hold the Serial Connection object []
 - This will eventually need to send the test results to our API []
 - Try to have as much processing done off the main thread as possible []
-- Make the list of possible tests dynamic, so that if a new test is added, it will be added to a single list []
+    - Image analysis
+    - Audio analysis
+    - API calls
+- Make the list of possible tests dynamic, so that if a new test is added, it will be added to a single list [✅]
     - Currently new tests need to be added to the Menu.py(line50) and ObjectBasedGCode.py(line615)
 - Can the movements be speed up and still be accurate?, optimize movement routes?, optimize test order? []
 - Set sleep to a single variable and use that variable for all sleeps []
@@ -41,6 +44,13 @@
     - Will this need to be done on the camera, or in the software?
 - Each test should have a pass/fail result []
 - Each test should end with being back at the 'home' screen []
+- Come up with a way to make sure the audio test noise does not interfere with other devices []
+    - "Soundproof the container"?
+- Sound Test needs to measure the volume of the sound, and make sure it is within a certain range []
+- Sound Test needs to be able to play a sound file []
+    - What is that range?
+- Update the phone device profile with the test results []
+
 
 ----- Once I get the touch Device -----
 - Update screenTest fucntion (line 206) to raise itself early on the bottom left corner of the screen, take a picture, and then "complete" the test by touching that exact corner []
