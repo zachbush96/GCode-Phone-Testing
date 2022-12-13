@@ -2,10 +2,12 @@ import random
 from ObjectBasedGCode import *
 from Camera import *
 import serial
+from logger import *
+
 
 #cls()
 TROUBLESHOOTING = False
-Testing_Device = GalaxyNote20Ultra
+
 
 
 while True:
@@ -45,41 +47,41 @@ while True:
             ser = serial.Serial(cnc.COMport, 115200, timeout=1)
             setupConnection(ser)
         if choice == "1":
-            #SHOULD be a for loop that runs through all the tests
+            #Testing_Device["IMEI"] = createIMEILog(input("Enter IMEI: "))
             for x in ViableTests:
-                x(ser, Testing_Device)
+                x(ser, Template)
             print("Returning to 000")
             command(ser, "G1 X0 Y0 Z0 F1000") #Return to 0,0,0 to swap out the phone
             
         elif choice == "2": #Red
             print("Starting Red Test - Menu")
-            Red(ser, Testing_Device)                
+            Red(ser, Template)                
         
         elif choice == "3": #Green
             print("Starting Green Test")
-            Green(ser, Testing_Device)
+            Green(ser, Template)
         
         elif choice == "4": #Blue
-            Blue(ser, Testing_Device)
+            Blue(ser, Template)
         
         elif choice == "5": #Touch Test
             print("Starting Touch Test")
-            screenTest(ser, Testing_Device)        
+            screenTest(ser, Template)        
         
         elif choice == "6": #Main Menu
             print("Returning to MAIN MENU")        
         
         elif choice == "7": #Power Button
             print("Starting Power Button Test")
-            PowerButton(ser, Testing_Device)        
+            PowerButton(ser, Template)        
         
         elif choice == "8": #Volume Down Button
             print("Starting Volume Down Test")
-            VolumeDown(ser, Testing_Device)       
+            VolumeDown(ser, Template)       
         
         elif choice == "9": #Volume Up Button
             print("Starting Volume Up Test")
-            VolumeUp(ser, Testing_Device)
+            VolumeUp(ser, Template)
         
         else:
             print("Invalid Input")    
@@ -147,7 +149,7 @@ while True:
             setupConnection(ser)
         if choice == "1": #Center Camera
             print("Centering Camera")
-            command(ser, Testing_Device['testLocations']['Camera Center'])
+            command(ser, Template['testLocations']['Camera Center'])
         if choice == "2": #Take Picture using camera selected in the CNC Profile
             print("Taking Picture")
             capturePicture("TestPicture" + str(random.randint(0, 100000)), cnc)
