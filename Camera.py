@@ -8,6 +8,7 @@ import requests
 import imutils
 import numpy as np
 import glob
+from logger import *
 
 
 
@@ -131,7 +132,7 @@ def checkForScreenBurnIn(imagePath):
 def testImages(imagePath): #For the SubKey test, cnc argument is to get the image directory
     imagePath = "IMAGES/"+imagePath
     testResult = "FAIL" #Default to FAIL, but if all the images are good, set to PASS
-    individualTestResults = []
+    individualTestResults = [] #Dictionary to hold the results of each image
     print("Image File: " + imagePath)
     if "VolumeUp" in imagePath:
         exptectedColor = "White"
@@ -153,12 +154,29 @@ def testImages(imagePath): #For the SubKey test, cnc argument is to get the imag
     print("Color: " + color)
     color = color.replace("[", "")
     color = color.replace("]", "")
-    blueValue = int(color[0]+color[1]+color[2])
-    greenValue = int(color[4]+color[5]+color[6])
-    redValue = int(color[8]+color[9]+color[10])
+    #If color length is less than 11, then each color is only one digit
+    if len(color) < 11:
+        color = color.split(" ")
+        print("Color: " + str(color))
+        try:
+            blueValue = int(color[0])
+            greenValue = int(color[1])
+            redValue = int(color[2])
+        except:
+            print("Hit Color Exception. Trying other options...")
+            try:
+                blueValue = int(color[0])
+                greenValue = int(color[2])
+                redValue = int(color[3])
+            except:
+                print("Coulnt figure it out...")
+    else:
+        blueValue = int(color[0]+color[1]+color[2])
+        greenValue = int(color[4]+color[5]+color[6])
+        redValue = int(color[8]+color[9]+color[10])
     print(f'Red: {redValue} Green: {greenValue} Blue: {blueValue}')  
     if exptectedColor == "White":
-        if redValue > 200 and greenValue > 200 and blueValue > 200:
+        if redValue > 200 and greenValue > 175 and blueValue > 200:
             testResult = "PASS"
             individualTestResults.append(testResult)
         else:
@@ -198,15 +216,55 @@ def testImages(imagePath): #For the SubKey test, cnc argument is to get the imag
             individualTestResults.append(testResult)
         else:
             individualTestResults.append("FAIL")
-    
+    print("Test Result: " + testResult)
     return testResult
 
+def analyzeTouchTest(imagePath):
+    #Load an image using the image path (append IMAGES/) and get a percent of R G B values
+    #The format of the colors are in B G R
+    imagePath = "IMAGES/"+imagePath
+    #Resize the image to be half the original size
+    img = cv.imread(imagePath)
+    img = cv.resize(img, (0, 0), fx=0.5, fy=0.5)
+    greenPercent = 0
+    totalPixels = 0
+    for row in img:
+        for pixel in row:
+            totalPixels += 1
+            #If the pixel is mostly green, add to the green percent
+            if pixel[1] > pixel[0] and pixel[1] > pixel[2]:
+                greenPercent += 1
+    greenPercent = greenPercent/totalPixels
+    print(f'Green: {greenPercent*100}')
+    #If the green percent is greater than 15%, then the test passed
+    if greenPercent*100 > 15:
+        return "PASS"
+    else:
+        return "FAIL"
+
+def analyzeTouchTest_old_DOESNT_WORK(imagePath):
+    imagePath = "IMAGES/"+imagePath
+    testResult = "FAIL" #Default to FAIL, but if the touch screen is working properly, set to PASS
+    img = cv.imread(imagePath)
+    #Resize the image to 1/2 the original size
+    img = cv.resize(img, (0, 0), fx=0.5, fy=0.5)
+    rows, cols, _ = img.shape
+    greenPixels = 0
+    totalPixels = 0
+    for i in range(rows):
+        for j in range(cols):
+            if img[i, j][1] > 150:
+                greenPixels += 1
+            totalPixels += 1
+    percentGreen = greenPixels/totalPixels
+    #Convert to a percentage with no decimal places and make it an int
+    percentGreen = int(percentGreen*100)
+    print(f'Total Pixels: {totalPixels} Green Pixels: {greenPixels} Percent Green: {percentGreen}')
+    if percentGreen > 50:
+        testResult = "PASS"
+    return testResult
+
+
+
 if __name__ == "__main__":
-    #print(readText("IMAGES/rotatedImages/Sensor143.jpg"))
-    #print(checkForScreenBurnIn("IMAGES/imagePath/red.jpg"))
-    #print(testImages("IMAGES/subKeyOnly/SubKey_VolumeDown95643.jpg"))
-    #For image in IMAGES/subKeyOnly that starts with SubKey, run the testImages function
-    for image in glob.glob("IMAGES/subKeyOnly/SubKey*.jpg"):
-        print(testImages(image))
-        print("\n")
-    pass
+    testImages("35655677285000971/SubKey_VolumeUp35655677285000971.jpg")
