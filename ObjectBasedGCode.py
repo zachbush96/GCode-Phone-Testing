@@ -19,12 +19,13 @@ import math
 import os
 import random
 from Camera import *
+from logger import *
 
 
 
 #FREQUENTLY USED VARIABLES
 TROUBLESHOOTING = True
-BACKOFF = 5 #Hit the limit switch and and then move back a few mm with the force of BACKOFF_FORCE
+BACKOFF = 5 #DO NOT CHANGE - Changing this will cause the axis to hit the switches
 BACKOFF_FORCE = 3000
 SCREEN_CORDINATES_PADDING = BACKOFF + 4
 FSPEED = 3_000
@@ -36,6 +37,7 @@ Name = None
 Port = None
 Image = None
 Camera = None
+gs20u = None
 
 
 
@@ -141,7 +143,7 @@ def set00(ser, cnc): #Goes to the limit switch of each axis, scoots off the limi
     command(ser, "$X") #Clear any alarms
     command(ser, "$H")
     time.sleep(1)
-    command(ser, f'G1 Y-{BACKOFF} FF{BACKOFF_FORCE}') #Move Down
+    command(ser, f'G1 Y-{BACKOFF + 1} FF{BACKOFF_FORCE}') #Move Down
     time.sleep(2.5)
     ser.close()
     print("""
@@ -160,7 +162,10 @@ def set00(ser, cnc): #Goes to the limit switch of each axis, scoots off the limi
     ser = serial.Serial(cnc.COMport, 115200, timeout=1) #Reopen the connection
     setupConnection(ser) #Setup the new connection
     command(ser, "G91") #Set to relative mode
-    command(ser, f'G1 Z300 F{FSPEED}') #Move Z axis Up 
+    command(ser, f'G1 Z300 F{FSPEED}') #Move Z axis Up
+    print("First Z move up sent")
+    command(ser, f'G1 Z300 F{FSPEED}') #Move Z axis Up again 
+    print("Second Z move up sent")
     time.sleep(10) #Sleep while waiting for large move to complete
     command(ser, "$X") #Reset the alarm
     command(ser, "$H")
@@ -225,83 +230,96 @@ def click(ser): #Currently - Lower and then raise the Z-Axis - Future - lower an
 
 
 
+
+
 #MAIN TEST FUNCTIONS
-def screenTest(ser, DeviceProfile):
+def screenTest(ser, PassedTemplate):
   print("Starting Screen Test")
   #Test order should be , Touch, Top Left corner, Top Right corner, bottom right coner, 
   #bottom left corner, top left, bottom right, bottom left, almost top right, 
   #CAMERA_IMAGE, almost top right, top right
-  command(ser, DeviceProfile["testLocations"]["Touch"]) #GOTO touch button
+  command(ser, PassedTemplate["testLocations"]["Touch"]) #GOTO touch button
   click(ser) #Touch the screen and raise back up
-  command(ser, DeviceProfile["Display"]["Top Left Corner"])
+  command(ser, PassedTemplate["Display"]["Top Left Corner"])
   command(ser, f'G1 Z-35  F{FSPEED}')
-  command(ser, DeviceProfile["Display"]["Top Right Corner"])
-  command(ser, DeviceProfile["Display"]["Bottom Right Corner"])
-  command(ser, DeviceProfile["Display"]["Bottom Left Corner"])
-  command(ser, DeviceProfile["Display"]["Top Left Corner"])
-  command(ser, DeviceProfile["Display"]["Bottom Right Corner"])
-  command(ser, DeviceProfile["Display"]["Bottom Left Corner"])
-  command(ser, DeviceProfile["Display"]["Top Right Corner"]) #Eventually replace "Top Right Corner" with "Almost Top Right Corner"
-  command(ser, DeviceProfile["testLocations"]["Camera Center"]) #Take a picture of an ~almost~ complete test
-                                                    #WORKING ON - command(ser, DeviceProfile["TestLocations"]["Top Right Corner"])
+  command(ser, PassedTemplate["Display"]["Top Right Corner"])
+  command(ser, PassedTemplate["Display"]["Bottom Right Corner"])
+  command(ser, PassedTemplate["Display"]["Bottom Left Corner"])
+  command(ser, PassedTemplate["Display"]["Top Left Corner"])
+  command(ser, PassedTemplate["Display"]["Bottom Right Corner"])
+  command(ser, PassedTemplate["Display"]["Bottom Left Corner"])
+  command(ser, PassedTemplate["Display"]["Almost Top Right Corner"])
+  command(ser, PassedTemplate["testLocations"]["Camera Center"]) #Take a picture of an ~almost~ complete test
   time.sleep(63) #Wait 1 mminute
-  capturePicture("afterScreenTest" + str(random.randint(0, 100000)), cnc)
+  path = capturePicture("afterScreenTest" + gs20u.IMEI, cnc) #Returns the path to the new image
+  result = analyzeTouchTest(path) #Analyze the image
+  #Save the result to the log
+  addToIMEILog(gs20u.IMEI, {
+    "IMEI": gs20u.IMEI,
+    "Test": "Screen Test",
+    "Result": result
+    })
+  #Finish the test
+  command(ser, PassedTemplate["Display"]["Almost Top Right Corner"])
+  command(ser, f'G1 Z-35 F{FSPEED}') #Touch the screen
+  command(ser, PassedTemplate["Display"]["Top Right Corner"])
+  command(ser, f'G1 Z-15 F{FSPEED}')
 
-def Red(ser, DeviceProfile):
+def Red(ser, PassedTemplate):
   print("Starting Red LED Test - Internal")
-  command(ser, DeviceProfile['testLocations']['Red'])
+  command(ser, PassedTemplate['testLocations']['Red'])
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(15)  
   print("Just sent Camera Center")
-  capturePicture("GoodRed" + str(random.randint(0, 100000)), cnc)
+  capturePicture("GoodRed" + str(gs20u.IMEI), cnc)
   command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   #command(ser, "G1 Z-24")
   click(ser)
 
-def Green(ser, DeviceProfile):
+def Green(ser, PassedTemplate):
   print("Starting Green LED Test")
-  command(ser, DeviceProfile['testLocations']['Green'])
+  command(ser, PassedTemplate['testLocations']['Green'])
   command(ser, f'G1 Z-35  F{FSPEED}')
   command(ser, "G1 Z-30")
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(15)
-  capturePicture("GoodGreeen" + str(random.randint(0, 100000)), cnc)
+  capturePicture("GoodGreeen" + str(gs20u.IMEI), cnc)
   command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   command(ser, "G1 Z-35")
   command(ser, "G1 Z-21")
 
-def Blue(ser, DeviceProfile):
+def Blue(ser, PassedTemplate):
   print("Starting Blue LED Test")
-  command(ser, DeviceProfile['testLocations']['Blue'])
+  command(ser, PassedTemplate['testLocations']['Blue'])
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(15)
-  capturePicture("GoodBlue" + str(random.randint(0, 100000)), cnc)
+  capturePicture("GoodBlue" + str(gs20u.IMEI), cnc)
   command(ser, f'G1 Y-66 F{FSPEED}') #Move to a touchable location
   click(ser)
 
-def PowerButton(ser, DeviceProfile):
+def PowerButton(ser, PassedTemplate):
   print("Clicking Power Button")
-  command(ser, DeviceProfile['testLocations']['Power Button'])
+  command(ser, PassedTemplate['testLocations']['Power Button'])
   command(ser, "G1 Z-25")  #Lower the pen
   command(ser, "M1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
   command(ser, "G1 Z-15")  #Raise the finger
 
-def VolumeDown(ser, DeviceProfile):
+def VolumeDown(ser, PassedTemplate):
   print("Clicking Volume Down Button")
-  command(ser, DeviceProfile['testLocations']['Volume Down'])
+  command(ser, PassedTemplate['testLocations']['Volume Down'])
   command(ser, "G1 Z-25")  #Lower the pen
   command(ser, "M1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
   command(ser, "G1 Z-15")  #Raise the finger
 
-def VolumeUp(ser, DeviceProfile):
+def VolumeUp(ser, PassedTemplate):
   print("Clicking Volume Up Button")
-  command(ser, DeviceProfile['testLocations']['Volume Up'])
+  command(ser, PassedTemplate['testLocations']['Volume Up'])
   command(ser, "G1 Z-25")
   #Lower the finger
   command(ser, "M1 Y-128") #Bump the button
@@ -309,52 +327,52 @@ def VolumeUp(ser, DeviceProfile):
   #Raise the finger
   command(ser, "G1 Z-15")
 
-def Receiver(ser, DeviceProfile):
+def Receiver(ser, PassedTemplate):
   print("Starting Receiver Test")
-  command(ser, DeviceProfile['testLocations']['Receiver'])
+  command(ser, PassedTemplate['testLocations']['Receiver'])
   command(ser, "G1 Z-25") #Lower the finger
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(8)
-  capturePicture("WhiteScreen" + str(random.randint(0, 100000)), cnc)
+  capturePicture("WhiteScreen" + str(gs20u.IMEI), cnc)
   command(ser, "G1 Y-58") #Move to a touchable location
   click(ser)
 
-def Vibration(ser, DeviceProfile): #Need a way to check if the vibration motor is working
+def Vibration(ser, PassedTemplate): #Need a way to check if the vibration motor is working
   print("Starting Vibration Test")
-  command(ser, DeviceProfile['testLocations']['Vibration'])
+  command(ser, PassedTemplate['testLocations']['Vibration'])
   click(ser) #Turn on the vibration motor
   click(ser) #Turn off the vibration motor
 
-def MegaCam(ser, DeviceProfile): #Image is very dark compared to the other images
+def MegaCam(ser, PassedTemplate): #Image is very dark compared to the other images
   print("Starting MegaCam Test")
-  command(ser, DeviceProfile['testLocations']['Mega Cam'])
+  command(ser, PassedTemplate['testLocations']['Mega Cam'])
   click(ser)
   command(ser, "G1 X91 Y-90")   #Move to camera capture botton
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(30)
-  capturePicture("MegaCam" + str(random.randint(0, 100000)), cnc)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  capturePicture("MegaCam" + str(gs20u.IMEI), cnc)
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
   click(ser)
 
-def Sensor(ser, DeviceProfile): #Image is very bright compared to the other images
+def Sensor(ser, PassedTemplate): #Image is very bright compared to the other images
   print("Starting Sensor Test")
-  command(ser, DeviceProfile['testLocations']['Sensor'])
+  command(ser, PassedTemplate['testLocations']['Sensor'])
   click(ser)
   #Take a picture of the screen
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   #input("Press Enter to take a picture")
   time.sleep(30)
-  capturePicture("Sensor" + str(random.randint(0, 100000)), cnc)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  capturePicture("Sensor" + str(gs20u.IMEI), cnc)
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
 
-def Speaker(ser, DeviceProfile): #Needs some way to test the audio levels that play after the botton is pressed
+def Speaker(ser, PassedTemplate): #Needs some way to test the audio levels that play after the botton is pressed
   print("Starting Speaker Test")
-  command(ser, DeviceProfile['testLocations']['Speaker'])
+  command(ser, PassedTemplate['testLocations']['Speaker'])
   click(ser) #All Speakers
   #TestAudioLevels()
   click(ser) #Bottom Speaker
@@ -363,119 +381,134 @@ def Speaker(ser, DeviceProfile): #Needs some way to test the audio levels that p
   #TestAudioLevels()
   click(ser) #Stop the audio
 
-def SubKey(ser, DeviceProfile): 
+def SubKey(ser, PassedTemplate): 
 
   print("Starting SubKey Test")
-  command(ser, DeviceProfile['testLocations']['Sub Key'])
+  command(ser, PassedTemplate['testLocations']['Sub Key'])
   click(ser)
+
   imagePaths = []
   individualTestResults = []
+  results = {}
   
-  command(ser, DeviceProfile['testLocations']['Volume Up'])
+  command(ser, PassedTemplate['testLocations']['Volume Up'])
   print("Just hit Volume Up")
   command(ser, "G1 Z-25") #Lower the finger
   command(ser, "G1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  whiteImage = capturePicture("SubKey_VolumeUp" + str(random.randint(0, 100000)), cnc)
+  whiteImage = capturePicture("SubKey_VolumeUp" + str(gs20u.IMEI), cnc) #Takes a picture and returns the path to the image
   imagePaths.append(whiteImage)
 
-  command(ser, DeviceProfile['testLocations']['Volume Down'])
+
+  command(ser, PassedTemplate['testLocations']['Volume Down'])
   print("Just hit Volume Down")
   command(ser, "G1 Z-25") #Lower the finger
   command(ser, "G1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  greenImage = capturePicture("SubKey_VolumeDown" + str(random.randint(0, 100000)), cnc)
+  greenImage = capturePicture("SubKey_VolumeDown" + str(gs20u.IMEI), cnc)
   imagePaths.append(greenImage)
   
-  command(ser, DeviceProfile['testLocations']['Power Button'])
+  command(ser, PassedTemplate['testLocations']['Power Button'])
   print("Just hit Power Button")
   command(ser, "G1 Z-25") #Lower the finger
   command(ser, "G1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  redImage = capturePicture("SubKey_PowerButton" + str(random.randint(0, 100000)), cnc)
-  imagePaths.append(redImage)
+  redImage = capturePicture("SubKey_PowerButton" + str(gs20u.IMEI), cnc)
+  imagePaths.append(redImage) #Stores the path to the image
   
-  command(ser, DeviceProfile['Display']['Back Button'])
+  command(ser, PassedTemplate['Display']['Back Button'])
   print("Just hit Back Button")
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  magentaImage = capturePicture("SubKey_BackButton" + str(random.randint(0, 100000)), cnc)
-  imagePaths.append(magentaImage)
+  magentaImage = capturePicture("SubKey_BackButton" + str(gs20u.IMEI), cnc)
+  imagePaths.append(magentaImage) #Stores the path to the image
   
-  command(ser, DeviceProfile['Display']['Home Button'])
+  command(ser, PassedTemplate['Display']['Home Button'])
   print("Just hit Home Button")
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  blueImage = capturePicture("SubKey_HomeButton" + str(random.randint(0, 100000)), cnc)
-  imagePaths.append(blueImage)
+  blueImage = capturePicture("SubKey_HomeButton" + str(gs20u.IMEI), cnc)
+  imagePaths.append(blueImage) #Stores the path to the image
   
-  command(ser, DeviceProfile['Display']['Menu Button'])
+  command(ser, PassedTemplate['Display']['Menu Button'])
   print("Just hit Menu Button")
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   print("Just sent Camera Center")
   time.sleep(20)
-  orangeImage = capturePicture("SubKey_MenuButton" + str(random.randint(0, 100000)), cnc)
-  imagePaths.append(orangeImage)
+  orangeImage = capturePicture("SubKey_MenuButton" + str(gs20u.IMEI), cnc)
+  imagePaths.append(orangeImage) #Stores the path to the image
 
-  #Leave the SubKey test (double tap the back button)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
   click(ser)
+  command(ser, 'G1 Z-5 F{FSPEED}')
   print("Starting SubKey Image Testing")
   for imagePath in imagePaths:
     r = testImages(imagePath) #In the Camera.py file
     individualTestResults.append(r)
-  print(individualTestResults)
+  results['Volume Up'] = individualTestResults[0]
+  results['Volume Down'] = individualTestResults[1]
+  results['Power'] = individualTestResults[2]
+  results['Back'] = individualTestResults[3]
+  results['Home'] = individualTestResults[4]
+  results['Menu'] = individualTestResults[5]
+  for key in results:
+    addToIMEILog(
+      gs20u.IMEI,
+      {"IMEI": gs20u.IMEI,
+      "Test": "SubKey " + key,
+      "Result": results[key]})
+  return results
 
-def FrontCamera(ser, DeviceProfile): 
+def FrontCamera(ser, PassedTemplate): 
   print("Starting Front Camera Test")
-  command(ser, DeviceProfile['testLocations']['Front Cam'])
+  command(ser, PassedTemplate['testLocations']['Front Cam'])
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(15)
-  capturePicture("FrontCamera" + str(random.randint(0, 100000)), cnc)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  capturePicture("FrontCamera" + str(gs20u.IMEI), cnc)
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
   click(ser)
 
-def GripSensor(ser, DeviceProfile): #INCOMPLETE
+def GripSensor(ser, PassedTemplate): #INCOMPLETE
   print("Starting Grip Sensor Test")
   pass
 
-def Black(ser, DeviceProfile): 
+def Black(ser, PassedTemplate): 
   print("Starting Black LED Test")
-  command(ser, DeviceProfile['testLocations']['Black'])
+  command(ser, PassedTemplate['testLocations']['Black'])
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(15)
-  capturePicture("Black" + str(random.randint(0, 100000)), cnc)
-  command(ser, DeviceProfile['testLocations']['Power Button'])
+  capturePicture("Black" + str(gs20u.IMEI), cnc)
+  command(ser, PassedTemplate['testLocations']['Power Button'])
   command(ser, "G1 Z-25") #Lower the finger
   command(ser, "G1 Y-128") #Bump the button
   command(ser, "G1 Y-131") #Back up off the button
 
-def HallIC(ser, DeviceProfile): #INCOMPLETE
+def HallIC(ser, PassedTemplate): #INCOMPLETE
   pass
 
-def sPen(ser, DeviceProfile): #INCOMPLETE
+def sPen(ser, PassedTemplate): #INCOMPLETE
   pass
 
-def MST(ser, DeviceProfile): #INCOMPLETE
-  command(ser, DeviceProfile['testLocations']['MST'])
+def MST(ser, PassedTemplate): #INCOMPLETE
+  command(ser, PassedTemplate['testLocations']['MST'])
   click(ser)
   OneTimeTrackOne = "G1 INCOMPLETE"
   OneTimeTrackTwo = "G1 INCOMPLETE"
@@ -484,11 +517,11 @@ def MST(ser, DeviceProfile): #INCOMPLETE
   ContinousTrackOneandTwo = "G1 INCOMPLETE"
   ContinousOff = "G1 INCOMPLETE"
 
-def MLC(ser, DeviceProfile): #INCOMPLETE
+def MLC(ser, PassedTemplate): #INCOMPLETE
   pass
 
-def LoopBack(ser, DeviceProfile): #INCOMPLETE
-  command(ser, DeviceProfile['testLocations']['Loop Back'])
+def LoopBack(ser, PassedTemplate): #INCOMPLETE
+  command(ser, PassedTemplate['testLocations']['Loop Back'])
   click(ser)
   RCV_1stMic = "G1 INCOMPLETE"
   SPK_2ndMic = "G1 INCOMPLETE"
@@ -496,51 +529,41 @@ def LoopBack(ser, DeviceProfile): #INCOMPLETE
   EP = "G1 INCOMPLETE"
   ExitButton = "G1 INCOMPLETE"
 
-def Version(ser, DeviceProfile): 
+def Version(ser, PassedTemplate): 
   print("Starting Version Test")
-  command(ser, DeviceProfile['testLocations']['Version'])
+  command(ser, PassedTemplate['testLocations']['Version'])
   click(ser)
-  command(ser, DeviceProfile['testLocations']['Camera Center'])
+  command(ser, PassedTemplate['testLocations']['Camera Center'])
   time.sleep(15)
-  capturePicture("Version" + str(random.randint(0, 100000)), cnc)
-  command(ser, DeviceProfile['Display']['Back Button'])
+  capturePicture("Version" + str(gs20u.IMEI), cnc)
+  command(ser, PassedTemplate['Display']['Back Button'])
   click(ser)
   click(ser)
 
+def waterSeal(ser, PassedTemplate):
+  #Open waterSeal app ### HANDLED EXTERNALLY ###
+  #Click button to start collecting data
+  command(ser, PassedTemplate['testLocations']['Water Seal']['Start'])
+  #Press HARD on the middle of the screen and hold for 10 seconds
+  command(ser, PassedTemplate['Display']['Center'])
+  command(ser, f'G1 Z-35 F{FSPEED}') #Move Z axis down
+  #extend the finger
 
-
-
-
-
-
-
-
+  #Click button to stop collecting data
+  command(ser, PassedTemplate['testLocations']['Water Seal']['Stop'])
+  #Click the button to send the data
+  command(ser, PassedTemplate['testLocations']['Water Seal']['Send'])
 
 
 
 
 #Once a test is complete, add it to this array to include it in the test suite
-ViableTests = [
-  #Red, 
-  #Green, 
-  #Blue
-  #Receiver,
-  #Vibration,
-  #MegaCam,
-  #Sensor,
-  #screenTest,
-  #Speaker,
-  SubKey
-  #FrontCamera,
-  #Black,
-  #Version
-]
+ViableTests = [waterSeal]
 
 
 
-#Device Profile
-GalaxyNote20Ultra = {
-    "IMEI": "000000000000000",
+#The Template stores testing information for a specific device (Galaxy Note 20 Ultra)
+Template = {
     "X Length": 164.8,
     "Y Length": 77.2,
     "Z Length": 8.1,
@@ -553,10 +576,11 @@ GalaxyNote20Ultra = {
         "Top Right Corner": f'G1 X224.4 Y-121  F{FSPEED}',
         "Bottom Right Corner": f'G1 X78.5 Y-121  F{FSPEED}',
         "Bottom Left Corner": f'G1 X78.5 Y-53  F{FSPEED}',
-        "Almost Top Right Corner": f'', #Used for the screen test
+        "Almost Top Right Corner": f'G1 X220 Y-115 F{FSPEED}', #!!UNTESTED LOCATION!! *Used for the screen test
         "Back Button":f'G1 X80.5 Y-105 F{FSPEED}',
         "Home Button":f'G1 X80.5 Y-88 F{FSPEED}',
-        "Menu Button":f'G1 X80.5 Y-65 F{FSPEED}'
+        "Menu Button":f'G1 X80.5 Y-65 F{FSPEED}',
+        "Center": f'G1 X150 Y-88 F{FSPEED}'
     },
     "testLocations": {
         "Red": f'G1 X216 Y-65 F{FSPEED}', #Test Created
@@ -584,49 +608,122 @@ GalaxyNote20Ultra = {
         "Camera Center": f'G1 X153 Y-38 Z5 F{FSPEED}',
         "Top Speaker": f'UNKNOWN',
         "Bottom Speaker": f'G1 X75 Y-70 Z-30 F{FSPEED}',
-    },
-    "Test Results": {
-        "Red": "Null",
-        "Green": "Null",
-        "Blue": "Null",
-        "Receiver": "Null",
-        "Vibration": "Null",
-        "Mega Cam": "Null",
-        "Sensor": "Null",
-        "Touch": "Null",
-        "Speaker": 0,
-        "Sub Key": {
-            "Volume Up": "Null",
-            "Volume Down": "Null",
-            "Power": "Null",
-            "Back": "Null",
-            "Home": "Null",
-            "Menu": "Null"
-        },
-        "Front Cam": "Null",
-        "Black": "Null",
-        "Hall IC": "Null",
-        "S-Pen": "Null",
-        "MST Test": {
-            "One Time Track One": "Null",
-            "One Time Track Two": "Null",
-            "Continous Track One": "Null",
-            "Continous Track Two": "Null",
-            "Continous Track One and Two": "Null",
-            "Continous Off": "Null"
-        },
-        "MLC": "Null",
-        "Loopback": {
-            "RCV 1st Mic": "Null",
-            "SPK 2nd Mic": "Null",
-            "SPK 3rd Mic": "Null",
-            "EP": "Null",
-            "Exit Button": "Null"
-        },
-        "Version": "Null",
-        "Grip Sensor": "Null"
-    }  
+    } 
 }
+
+Note4Template = {
+    "X Length": 164.8,
+    "Y Length": 77.2,
+    "Z Length": 8.1,
+    "Display": {
+        "Diagnol Size": 175,
+        "Aspect Ratio": round(19.3/9, 2),
+        "Width": 0, #158.6
+        "Height": 0, #73.95
+        "Top Left Corner": f'G1 X224.4 Y-53  F{FSPEED}',
+        "Top Right Corner": f'G1 X224.4 Y-121  F{FSPEED}',
+        "Bottom Right Corner": f'G1 X78.5 Y-121  F{FSPEED}',
+        "Bottom Left Corner": f'G1 X78.5 Y-53  F{FSPEED}',
+        "Almost Top Right Corner": f'G1 X220 Y-115 F{FSPEED}', #!!UNTESTED LOCATION!! *Used for the screen test
+        "Back Button":f'G1 X80.5 Y-105 F{FSPEED}',
+        "Home Button":f'G1 X80.5 Y-88 F{FSPEED}',
+        "Menu Button":f'G1 X80.5 Y-65 F{FSPEED}',
+        "Center": f'G1 X150 Y-88 F{FSPEED}'
+    },
+    "testLocations": {
+        "Red": f'G1 X216 Y-65 F{FSPEED}', #Test Created
+        "Green": f'G1 X216 Y-90 F{FSPEED}', #Test Created
+        "Blue": f'G1 X216 Y-114 F{FSPEED}', #Test Created
+        "Receiver":f'G1 X203 Y-65 F{FSPEED}', #CAN ALSO TEST WHITE SCREEN
+        "Vibration":f'G1 X203 Y-90 F{FSPEED}',
+        "Mega Cam":f'G1 X203 Y-114 F{FSPEED}',
+        "Sensor":f'G1 X180 Y-65 F{FSPEED}',
+        "Touch": f'G1 X180 Y-90 F{FSPEED}', #Test Created
+        "Speaker":f'G1 X180 Y-114 F{FSPEED}',
+        "Sub Key":f'G1 X160 Y-65 F{FSPEED}',
+        "Front Cam":f'G1 X160 Y-90 F{FSPEED}',
+        "Black":f'G1 X160 Y-114 F{FSPEED}',
+        "Hall IC":f'G1 X140 Y-65 F{FSPEED}',
+        "S-Pen":f'G1 X140 Y-90 F{FSPEED}',
+        "MST Test":f'G1 X140 Y-114 F{FSPEED}',
+        "MLC":f'G1 X120 Y-65 F{FSPEED}',
+        "Loopback":f'G1 X120 Y-90 F{FSPEED}',
+        "Version": f'G1 X117 Y-110 F{FSPEED}',
+        "Grip Sensor":f'G1 X100 Y-65 F{FSPEED}',
+        "Power Button": f'G1 X169 Y-131 F{FSPEED}', #Test Created
+        "Volume Down": f'G1 X184 Y-131 F{FSPEED}', #Test Created
+        "Volume Up": f'G1 X198 Y-131 F{FSPEED}', #Test Created
+        "Camera Center": f'G1 X153 Y-38 Z5 F{FSPEED}',
+        "Top Speaker": f'UNKNOWN',
+        "Bottom Speaker": f'G1 X75 Y-70 Z-30 F{FSPEED}',
+    }
+}
+
+iPhone6Template = {
+    "X Length": 138.3,
+    "Y Length": 67.1,
+    "Z Length": 6.9,
+    "Display": {
+        "Diagnol Size": 4.7,
+        "Aspect Ratio": round(16/9, 2),
+        "Width": 0, #138.3
+        "Height": 0, #67.1
+        "Top Left Corner": f'G1 X224.4 Y-53  F{FSPEED}',
+        "Top Right Corner": f'G1 X224.4 Y-121  F{FSPEED}',
+        "Bottom Right Corner": f'G1 X78.5 Y-121  F{FSPEED}',
+        "Bottom Left Corner": f'G1 X78.5 Y-53  F{FSPEED}',
+        "Almost Top Right Corner": f'G1 X220 Y-115 F{FSPEED}', #!!UNTESTED LOCATION!! *Used for the screen test
+        "Back Button":f'G1 X80.5 Y-105 F{FSPEED}',
+        "Home Button":f'G1 X80.5 Y-88 F{FSPEED}',
+        "Menu Button":f'G1 X80.5 Y-65 F{FSPEED}',
+        "Center": f'G1 X150 Y-88 F{FSPEED}'
+    },
+    "testLocations": {
+        "Red": f'G1 X216 Y-65 F{FSPEED}', #Test Created
+        "Green": f'G1 X216 Y-90 F{FSPEED}', #Test Created
+        "Blue": f'G1 X216 Y-114 F{FSPEED}', #Test Created
+        "Receiver":f'G1 X203 Y-65 F{FSPEED}', #CAN ALSO TEST WHITE SCREEN
+        "Vibration":f'G1 X203 Y-90 F{FSPEED}',
+        "Mega Cam":f'G1 X203 Y-114 F{FSPEED}',
+        "Sensor":f'G1 X180 Y-65 F{FSPEED}',
+        "Touch": f'G1 X180 Y-90 F{FSPEED}', #Test Created
+        "Speaker":f'G1 X180 Y-114 F{FSPEED}',
+        "Sub Key":f'G1 X160 Y-65 F{FSPEED}',
+        "Front Cam":f'G1 X160 Y-90 F{FSPEED}',
+        "Black":f'G1 X160 Y-114 F{FSPEED}',
+        "Hall IC":f'G1 X140 Y-65 F{FSPEED}',
+        "S-Pen":f'G1 X140 Y-90 F{FSPEED}',
+        "MST Test":f'G1 X140 Y-114 F{FSPEED}',
+        "MLC":f'G1 X120 Y-65 F{FSPEED}',
+        "Loopback":f'G1 X120 Y-90 F{FSPEED}',
+        "Version": f'G1 X117 Y-110 F{FSPEED}',
+        "Grip Sensor":f'G1 X100 Y-65 F{FSPEED}',
+        "Power Button": f'G1 X169 Y-131 F{FSPEED}', #Test Created
+        "Volume Down": f'G1 X184 Y-131 F{FSPEED}', #Test Created
+        "Volume Up": f'G1 X198 Y-131 F{FSPEED}', #Test Created
+        "Camera Center": f'G1 X153 Y-38 Z5 F{FSPEED}',
+        "Top Speaker": f'UNKNOWN',
+        "Bottom Speaker": f'G1 X75 Y-70 Z-30 F{FSPEED}'
+        }
+    }
+
+
+
+
+#Device Profile - Needs to be changed to a class so we can have multiple devices
+#Profile should only have IMEI and Test Results
+class IndividualDeviceProfile:
+  def __init__(self, IMEI):
+    self.IMEI = IMEI
+    self.TestResults = {}
+    createIMEILog(self.IMEI)
+  def addTestResult(self, TestName, TestResult):
+    self.TestResults[TestName] = TestResult
+    addToIMEILog(self.IMEI, {
+      "IMEI": self.IMEI,
+      "Test Name": TestName,
+      "Test Result": TestResult
+    })
 
 
 
@@ -682,17 +779,33 @@ def setupCNC(**options):
     if options.get("Name") != None: #If a name is not None, set the CNCMachine's name to it, otherwise generate a random name
         n = options["Name"]
     else:
-        n = "CNC_"+str(random.randint(0, 100000))
+        n = "CNC_"+str(gs20u.IMEI)
     
     C = CNCMachine(n, cport, cam, ipath) #Create the CNCMachine object
     print("CNC Object Created")
+    #Log the CNCMachine object using the AddLogEntry function
+    addLogEntry(C.viewSelf()) #Log the CNCMachine object
+    addLogEntry("IMEI: " + str(gs20u.IMEI))
     if TROUBLESHOOTING:
         print(C.viewSelf())
     return C
     
-#cls() #Clear the Screen
+cls() #Clear the Screen
 
-#Handle passing arguments from the command line
+def setupDevice(**options):
+    IMEI = ""
+    if options.get("IMEI") != None:
+        IMEI = options.get("IMEI")
+    else:
+        IMEI = input("Enter the IMEI of the device: ")
+    D = IndividualDeviceProfile(IMEI)
+    print("Device Object Created")
+    addLogEntry("Device Object Created")
+    if TROUBLESHOOTING:
+        print(D.IMEI)
+    return D
+
+
 
 if CountofArguments > 1:
   for i in range(1, CountofArguments):
@@ -704,12 +817,18 @@ if CountofArguments > 1:
           Image = sys.argv[i+1]
     elif sys.argv[i] == "--Camera":
           Camera = int(sys.argv[i+1])
+    elif sys.argv[i] == "--IMEI":
+          IMEI_Option = sys.argv[i+1]
+          gs20u = setupDevice(IMEI = IMEI_Option)
     elif sys.argv[i] == "-A":
           Auto = True
     elif sys.argv[i] == "-Z":
           Zero = True
 cnc = setupCNC(Name=Name, COMPORT=Port, CameraID=Camera, Path=Image)
 ser = serial.Serial(cnc.getComPort(), 115200, timeout=1) #Setup the serial port
+#If gs20u is not defined, prompt for the IMEI and create the device object
+if gs20u == None:
+    gs20u = setupDevice(IMEI = input("Enter the IMEI of the device: "))
 setupConnection(ser)
 command(ser, "G90")
 
@@ -726,9 +845,9 @@ if Auto and Zero:
     setupConnection(ser)
     command(ser, "G90")
     for x in ViableTests:
-      x(ser, GalaxyNote20Ultra)
+      x(ser, Template)
     print("All Tests Completed - Going to Home")
-    command(ser, "G1 X0 Y0")
+    command(ser, "G1 X0 Y0 Z0")
 
 elif Auto and not Zero:
   print("Closing Previous connection -- auto --")
@@ -738,9 +857,9 @@ elif Auto and not Zero:
   command(ser, "G90")
   print("Starting all tests ---auto---")
   for x in ViableTests:
-    x(ser, GalaxyNote20Ultra)
+    x(ser, Template)
   print("All Tests Complete - Going to Home")
-  command(ser, "G1 X0 Y0")
+  command(ser, "G1 X0 Y0 Z0")
 
 elif Zero and not Auto:
   set00(ser, cnc)
