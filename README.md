@@ -42,7 +42,7 @@
     - Some sleep times will need to be adjusted to account for long travel distances
 - Solution to make sure all the images are consistant (brightness, contrast, focus, etc) []
     - Will this need to be done on the camera, or in the software?
-- Each test should have a pass/fail result []
+- Each test should have a pass/fail result [✅] (Saved in log file)
 - Each test should end with being back at the 'home' screen []
 - Come up with a way to make sure the audio test noise does not interfere with other devices []
     - "Soundproof the container"?
@@ -50,6 +50,14 @@
 - Sound Test needs to be able to play a sound file []
     - What is that range?
 - Update the phone device profile with the test results []
+- Add a logging system []
+    - 1. A generic log file that logs the cnc machine name, image location details, and other info
+    - 2. A log file for each IMEI that logs the test results
+- Device Profile needs to be updated to a class. This is so each device can have a unique IMEI and test results []
+    - Alot of the code will need to be updated to use the new class 😥
+- When Homing, we can move all axis to the top left corner at the same time, and then back them off individually
+- Select which template to use based on user input []
+
 
 
 ----- Once I get the touch Device -----
