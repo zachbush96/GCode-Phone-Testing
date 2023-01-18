@@ -1,0 +1,64 @@
+iOS and Android Required
+
+Must be functional if being used manually or automatically
+    -- Visually easy to understand, and easy to use
+Prompt user to take a picture of a standard image testing picture
+    (https://upload.wikimedia.org/wikipedia/commons/1/14/%D0%A3%D0%AD%D0%98%D0%A2.svg)
+    (https://en.wikipedia.org/wiki/UEIT_-_Universal_Electronic_Test_Chart)
+
+Analyze image on Device
+OR
+**Send image to server to be Analyzed (LOCAL SERVER)
+
+Analysis to be performed:
+    - Check for color accuracy
+    - Check for color balance
+    - Check for color saturation
+    - Check for color temperature
+    - Check for color uniformity
+    - Check for inconsistant dark spots
+    - Check for inconsistant light spots
+    - Check for a full white or black image <--- most common issue
+
+If there is an issue founc with the image, prompt for another image to be taken
+Analyze if the issue is still present.
+    - Is the issue in the same spot on the image? (If so, is it a hardware issue) ((Potential FAIL))
+    - Did the "issue" move? (glare, refleaction, etc.) (If so, maybe its a user issue?)
+Prompt the user to take up to 3 images to compare the "issues"
+If issue is still present, the device should display "FAIL"
+
+**If image is analyzed on server, the server will send back the results to the device.
+    Based on that result, the device will prompt the user to take another image, or display "PASS"
+
+--QUOTES--
+Sent to 2 people
+
+
+
+I am looking for a simple, easy to use, and easy to understand app that can be used to test the quality of the camera on mobile devices.
+I would like it to prompt a user to take a picture, and then analyze the picture to see if there are any issues with the camera.
+I want to take a picture of a standard image testing picture - and based on the results of the analysis, the app will display "PASS" or prompt the user to take another picture.
+(https://upload.wikimedia.org/wikipedia/commons/1/14/%D0%A3%D0%AD%D0%98%D0%A2.svg) 
+(https://en.wikipedia.org/wiki/UEIT_-_Universal_Electronic_Test_Chart)
+**I am open to different suggestions on what "testing image" to use.**
+If the first test doesn't pass, I want the app to prompt the user to take a second picture, and then analyze the picture to see if there are any consecuitive issues with the camera.
+The issues I am looking for include: color accuracy, color balance, color saturation, color temperature, color uniformity, inconsistent dark spots, inconsistent light spots, a full white or black image, etc. 
+The app should prompt the user to take up to 3 pictures to compare the "issues" and then display "PASS" or "FAIL" based on the results of the analysis.
+The analysis can be done on the device, or sent to a server to be analyzed. If a server is used, the server should send back the results to the device.
+There is also an NDA and an Invention Disclosure Agreement that will need to be signed before any work is done.
+I am looking to get a few quotes - so If you could give me a cost estimate and time estimate, I would greatly appreciate it. Thanks!!
+
+
+
+The image the user takes should be divided into 6 segments.
+The app should analyze each segment to see if there are any issues with the camera.
+If the first image doesnt contain any issues the app should display "PASS"
+If the first image contains an issue, the app should prompt the user to take another image.
+The app should segment the second image into 6 segments and analyze each segment to see if there are any issues with the camera.
+If the "issue" is in a different spot on the second image, the app should prompt the user for a third image.
+The app should segment the third image into 6 segments and analyze each segment to see if there are any issues with the camera.
+If the "issue" is in a different spot on the third image, the app should display "PASS"
+If the "issue" is in the same spot on the third image, the app should display "FAIL"
+I want to make sure that the app doesnt pick up on any "issues" that are caused by glare, reflections, shadows, photo angle, etc.
+If needed - I can attach a few failure images to show what I am looking for.
+

@@ -1,0 +1,53 @@
+Android & IOS required
+
+Must be functional if used automated or manually
+    -- Visually easy to understand, and easy to use
+Inspired by the Samsung Touch screen test 
+    (https://images.samsung.com/is/image/samsung/assets/za/support/mobile-devices/how-do-i-perform-a-hardware-test-on-my-samsung-galaxy-s5/S5_Touch_Test4.jpg?$ORIGIN_JPG$)
+    -- No "X" in the middle, just box's around the perimeter
+Horizontal or vertical lines spaced 5mm apart
+After each square is touched, it should change color to blue, when all the squares are touched, it should change color to green
+
+Test Fails if:
+    Not completed in 45 seconds
+    If any of the squares are not touched
+Test Passes if:
+    All squares are touched
+
+Send test results to API that contain device IMEI, test results(PASS/FAIL), and timestamp, and make and model of device
+^^Also include eSIM if the device has one
+
+---QUOTES---
+
+Sent to 3 people already
+
+
+Hey, hope you're having a good week.
+I am looking for an iOS and Android app. The purpose of the app is to test the functionality of a devices touch screen.
+The inspiration of this app is the Samsung Touch screen test.
+(https://images.samsung.com/is/image/samsung/assets/za/support/mobile-devices/how-do-i-perform-a-hardware-test-on-my-samsung-galaxy-s5/S5_Touch_Test4.jpg?$ORIGIN_JPG$)
+I would like something similar, but without the "X" in the middle, just box's around the perimeter.
+It should also have horizontal (or vertical) lines spaced either 5mm or 10mm apart.
+After each square is touched, it should change color to green. This makes it easy to see if all the squares have been touched.
+The app should display "PASS" or "FAIL" after the test is completed or after the 45 second timer is up.
+The app should also send the test results to an API that contains the device IMEI, test results(PASS/FAIL), and timestamp.
+There is also an NDA and an Invention Disclosure Agreement that will need to be signed before any work is done. Im sure you understand.
+I am looking to get a few quotes - so If you could give me a cost estimate and time estimate, I would greatly appreciate it. Thanks!!!
+
+
+
+
+So he is actually requesting to get 2 "tests" in a single purchase.
+Have you reviewed the Camera test details I sent a few days ago?
+Could a single app be used for both tests? 
+
+
+
+I need the test to start with displaying all of the squares in white. Untouched.
+Once a square is touched, it should change color to blue. (This is a way to tell the test is in-progress)
+If all the square are touched, the whole screen should change color to green and should display "PASS" in the middle of the screen.
+OR
+if all of the squares are not touched by the 45 second timer, the whole screen should change color to red and should display "FAIL" in the middle of the screen.
+All of the untouched squares should turn blue to be easly seen against the red background.
+The app should send the test results to an API that contains:
+    device IMEI, make, model, serial number, eSIM number (if the device has one), test results(PASS/FAIL), and timestamp.

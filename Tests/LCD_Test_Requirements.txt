@@ -1,0 +1,69 @@
+
+1st Half ---App--- (phone agent based on server commands)
+phone app should display a complete RED, GREEN, BLUE, WHITE screen - and change the color when the screen pressed
+*Open App* RED screen  -> touch screen , change color (manual)  
+AND 
+I should be able to send a command to the phone app from a server to set the color (automatic)
+Assume there will be 25 phones connected to the server at a time. I need to be able to control each phone individually.
+
+
+2nd Half ---PC App or API---
+Handle the communication between the server and the app 
+    - If I want to change the color of the screen on an individual phone, I should be able to do that from the PC app
+The PC app (or API) should be passed an image *or set of images, and return coordinates of the "center of the problem" (if there is any).
+Other information can also be passed to the PC app to help determine if there is any burn in or not
+    - Device make, model, screen size, screen type, etc.
+Analysis should be done on the image or set to determine if there is any burn in
+For each section of suspected burn-in the PC app/API should return coordinates to the center of the issue(s). **See attached image for example
+Multiple images in different colors might be needed to determine if there is burn-in or if the issue is glare, shadows, user error, etc.
+
+Current Setup - 
+Camera (Model - UC70-6-12MM) Specs: 
+    Resolution - 3840 x 2160
+    FOV - 32deg x 61deg
+    Manual Focus
+
+You can assume the phone will be in the exact same position every time.
+The camera will be moved to the center of the phone, and the image will be taken.
+Threturned coordinates should be in millimeters from the center of the phone.
+The center of the image should be assumned to be the center of the phone (150, -90) every time.
+
+Returned JSON:
+{
+    "burnIn": true,
+    "points": [
+        {
+            "x": 120,
+            "y": -58
+        },
+        {
+            "x": 93,
+            "y": -120
+        },
+        {
+            "x": 211,
+            "y": -61
+        },
+        {
+            "x": 186,
+            "y": -90
+        }
+    ],
+}
+Attached are example images of the phone in different colors.
+Please let me know if you have any questions / comments / concerns.
+Thanks!
+-Zach
+
+
+Hey - just got back to the office. I got some more details about this. 
+I think the best option for this would be some sort of API that we can call from our app.
+The API should take in the image and other phone details and return the coordinates of the burn in.
+Yes, we have software that is controlling the camera. It is attached to a CNC device that is moving the camera around.
+The position of the phone in the image should be exactly the same every time.
+The easiest way to move the CNC is to give it the millimeters. The image is taken when the CNC is at the center of the bed - which is also the center of the phone. (The CNC is 300mm x 180mm)
+I've attached a sample PDF of the coordinates I am trying to get returned along with some sample JSON that I think would work.
+This might be easier to explain over a zoom call or teams meeting. Let me know if you are interested in that.
+Thanks!
+
+
